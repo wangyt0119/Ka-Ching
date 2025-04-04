@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import 'providers/auth_provider.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/user_provider.dart';
+import 'providers/activity_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'theme/app_theme.dart';
@@ -21,11 +22,12 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()),
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
+        ChangeNotifierProvider(create: (_) => ActivityProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
           return MaterialApp(
-            title: 'Splitwise Clone',
+            title: 'KaChing',
             theme: AppTheme.lightTheme,
             home: authProvider.isLoading
                 ? const SplashScreen()
@@ -60,20 +62,30 @@ class SplashScreen extends StatelessWidget {
               child: const Icon(
                 Icons.account_balance_wallet,
                 size: 60,
-                color: AppTheme.textPrimary,
+                color: Colors.white,
               ),
             ),
             const SizedBox(height: 24),
             const Text(
-              'Splitwise Clone',
+              'KaChing',
               style: TextStyle(
-                fontSize: 24,
+                fontSize: 32,
                 fontWeight: FontWeight.bold,
-                color: AppTheme.textPrimary,
+                color: AppTheme.primaryColor,
               ),
             ),
-            const SizedBox(height: 16),
-            const CircularProgressIndicator(),
+            const SizedBox(height: 8),
+            const Text(
+              'Split expenses with friends easily',
+              style: TextStyle(
+                fontSize: 16,
+                color: AppTheme.textSecondary,
+              ),
+            ),
+            const SizedBox(height: 32),
+            const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppTheme.primaryColor),
+            ),
           ],
         ),
       ),

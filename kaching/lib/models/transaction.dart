@@ -9,6 +9,7 @@ class Transaction {
   final String id;
   final String title;
   final double amount;
+  final String? description;
   final DateTime date;
   final String payerId;
   final Map<String, double> participants;
@@ -21,13 +22,14 @@ class Transaction {
     String? id,
     required this.title,
     required this.amount,
+    this.description,
     required this.date,
     required this.payerId,
     required this.participants,
-    required this.type,
     this.notes,
     this.receiptImagePath,
     this.groupId,
+    required this.type,
   }) : id = id ?? const Uuid().v4();
 
   Map<String, dynamic> toJson() {
@@ -35,6 +37,7 @@ class Transaction {
       'id': id,
       'title': title,
       'amount': amount,
+      'description': description,
       'date': date.toIso8601String(),
       'payerId': payerId,
       'participants': participants,
@@ -50,6 +53,7 @@ class Transaction {
       id: json['id'],
       title: json['title'],
       amount: json['amount'].toDouble(),
+      description: json['description'],
       date: DateTime.parse(json['date']),
       payerId: json['payerId'],
       participants: Map<String, double>.from(json['participants']),
