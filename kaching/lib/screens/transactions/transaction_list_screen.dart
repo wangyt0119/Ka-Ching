@@ -146,7 +146,7 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
                           ),
                         )
                       : ListView.separated(
-                          padding: const EdgeInsets.all(16),
+                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 70), // <- Added bottom padding
                           itemCount: filteredTransactions.length,
                           separatorBuilder: (context, index) => const Divider(),
                           itemBuilder: (context, index) {
