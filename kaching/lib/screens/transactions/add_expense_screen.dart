@@ -10,6 +10,10 @@ import '../../providers/transaction_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../theme/app_theme.dart';
 import '../../providers/currency_provider.dart';
+import '../../models/activity.dart';
+import '../../providers/activity_provider.dart';
+
+enum SplitMethod { equally, unequally, percentage }
 
 class AddExpenseScreen extends StatefulWidget {
   final String? activityId;
@@ -29,51 +33,56 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   File? _receiptImage;
   Map<String, double> _participants = {};
   String? _selectedPayerId;
-  bool _splitEqually = true;
-  
+  SplitMethod _splitMethod = SplitMethod.equally;
+  String? _selectedActivityId;
+  List<Activity> _activities = [];
+
   @override
-  void initState() {
-    super.initState();
-    _loadFriends();
+void initState() {
+  super.initState();
+  _loadInitialData();
+}
+
+Future<void> _loadInitialData() async {
+  final authProvider = Provider.of<AuthProvider>(context, listen: false);
+  final userProvider = Provider.of<UserProvider>(context, listen: false);
+  final activityProvider = Provider.of<ActivityProvider>(context, listen: false);
+
+  if (authProvider.currentUser != null) {
+    await userProvider.loadFriends(authProvider.currentUser!.id);
+    await activityProvider.loadUserActivities(authProvider.currentUser!.id);
+    final activities = activityProvider.activities;
+
+    setState(() {
+      _selectedPayerId = authProvider.currentUser!.id;
+      _participants[authProvider.currentUser!.id] = 0;
+      _activities = activities;
+      _selectedActivityId = widget.activityId ?? (activities.isNotEmpty ? activities.first.id : null);
+    });
+
+    _calculateShares();
   }
-  
-  @override
-  void dispose() {
-    _titleController.dispose();
-    _amountController.dispose();
-    _descriptionController.dispose();
-    super.dispose();
-  }
-  
-  Future<void> _loadFriends() async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final userProvider = Provider.of<UserProvider>(context, listen: false);
-    
-    if (authProvider.currentUser != null) {
-      await userProvider.loadFriends(authProvider.currentUser!.id);
-      
-      // Initialize current user as payer
-      setState(() {
-        _selectedPayerId = authProvider.currentUser!.id;
-        _participants[authProvider.currentUser!.id] = 0;
-      });
-      
-      _calculateShares();
-    }
-  }
+}
+
   
   void _calculateShares() {
-    if (_splitEqually && _participants.isNotEmpty) {
-      final amount = double.tryParse(_amountController.text) ?? 0;
+  final amount = double.tryParse(_amountController.text) ?? 0;
+
+  setState(() {
+    if (_splitMethod == SplitMethod.equally && _participants.isNotEmpty) {
       final perPersonAmount = amount / _participants.length;
-      
-      setState(() {
-        for (final key in _participants.keys) {
-          _participants[key] = perPersonAmount;
-        }
-      });
+      for (final key in _participants.keys) {
+        _participants[key] = perPersonAmount;
+      }
+    } else if (_splitMethod == SplitMethod.percentage && _participants.isNotEmpty) {
+      for (final key in _participants.keys) {
+        final percent = _participants[key] ?? 0;
+        _participants[key] = amount * percent / 100;
+      }
     }
-  }
+  });
+}
+
   
   Future<void> _pickImage() async {
     final picker = ImagePicker();
@@ -102,6 +111,16 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   }
   
   Future<void> _addExpense() async {
+    if (_splitMethod == SplitMethod.percentage) {
+      final totalPercent = _participants.values.reduce((a, b) => a + b);
+      if ((totalPercent - 100).abs() > 0.1) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Total percentage must equal 100%')),
+        );
+        return;
+      }
+    }
+
     if (_formKey.currentState!.validate()) {
       if (_participants.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -134,7 +153,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         participants: Map.from(_participants),
         receiptImagePath: _receiptImage?.path,
         type: TransactionType.expense,
-        activityId: widget.activityId,
+        activityId: _selectedActivityId,
       );
       
       final success = await transactionProvider.addTransaction(transaction);
@@ -164,6 +183,31 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              DropdownButtonFormField<String>(
+              value: _selectedActivityId,
+              decoration: const InputDecoration(
+                labelText: 'Select Activity',
+                prefixIcon: Icon(Icons.group),
+              ),
+              items: _activities.map((activity) {
+                return DropdownMenuItem(
+                  value: activity.id,
+                  child: Text(activity.name),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedActivityId = value;
+                });
+              },
+              validator: (value) {
+                if (value == null) {
+                  return 'Please select an activity';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: 16),
               TextFormField(
                 controller: _titleController,
                 decoration: const InputDecoration(
@@ -203,7 +247,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                   return null;
                 },
                 onChanged: (_) {
-                  if (_splitEqually) {
+                  if (_splitMethod == SplitMethod.equally) {
                     _calculateShares();
                   }
                 },
@@ -291,43 +335,50 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 ),
               const SizedBox(height: 24),
               Row(
-                children: [
-                  const Text(
-                    'Split',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppTheme.textPrimary,
-                    ),
+              children: [
+                const Text(
+                  'Split',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: AppTheme.textPrimary,
                   ),
-                  const Spacer(),
-                  ChoiceChip(
-                    label: const Text('Equally'),
-                    selected: _splitEqually,
-                    onSelected: (selected) {
-                      setState(() {
-                        _splitEqually = selected;
-                        if (selected) {
-                          _calculateShares();
-                        }
-                      });
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                  ChoiceChip(
-                    label: const Text('Unequally'),
-                    selected: !_splitEqually,
-                    onSelected: (selected) {
-                      setState(() {
-                        _splitEqually = !selected;
-                        if (!selected) {
-                          _calculateShares();
-                        }
-                      });
-                    },
-                  ),
-                ],
-              ),
+                ),
+                const Spacer(),
+                ChoiceChip(
+                  label: const Text('Equally'),
+                  selected: _splitMethod == SplitMethod.equally,
+                  onSelected: (_) {
+                    setState(() {
+                      _splitMethod = SplitMethod.equally;
+                      _calculateShares();
+                    });
+                  },
+                ),
+                const SizedBox(width: 8),
+                ChoiceChip(
+                  label: const Text('Unequally'),
+                  selected: _splitMethod == SplitMethod.unequally,
+                  onSelected: (_) {
+                    setState(() {
+                      _splitMethod = SplitMethod.unequally;
+                    });
+                  },
+                ),
+                const SizedBox(width: 8),
+                ChoiceChip(
+                  label: const Text('By %'),
+                  selected: _splitMethod == SplitMethod.percentage,
+                  onSelected: (_) {
+                    setState(() {
+                      _splitMethod = SplitMethod.percentage;
+                      _calculateShares();
+                    });
+                  },
+                ),
+              ],
+            ),
+
               const SizedBox(height: 16),
               const Text(
                 'Participants',
@@ -403,29 +454,48 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         });
       },
       title: Text(isCurrentUser ? 'You' : user.name),
-      subtitle: isSelected && !_splitEqually
-          ? TextFormField(
-              initialValue: (_participants[user.id] ?? 0).toString(),
-              decoration: InputDecoration(
-                prefixText: currencyProvider.selectedCurrency.symbol,
-                isDense: true,
-              ),
-              keyboardType: const TextInputType.numberWithOptions(decimal: true),
-              inputFormatters: [
-                FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
-              ],
-              onChanged: (value) {
-                setState(() {
-                  _participants[user.id] = double.tryParse(value) ?? 0;
-                });
-              },
-            )
-          : isSelected && _splitEqually
-              ? Text(
-                  '${currencyProvider.selectedCurrency.symbol}${(_participants[user.id] ?? 0).toStringAsFixed(2)}',
-                  style: const TextStyle(color: AppTheme.textSecondary),
-                )
-              : null,
+      subtitle: isSelected
+    ? _splitMethod == SplitMethod.unequally
+        ? TextFormField(
+            initialValue: (_participants[user.id] ?? 0).toString(),
+            decoration: InputDecoration(
+              prefixText: currencyProvider.selectedCurrency.symbol,
+              isDense: true,
+            ),
+            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: [
+              FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+            ],
+            onChanged: (value) {
+              setState(() {
+                _participants[user.id] = double.tryParse(value) ?? 0;
+              });
+            },
+          )
+        : _splitMethod == SplitMethod.percentage
+            ? TextFormField(
+                initialValue: (_participants[user.id] ?? 0).toString(),
+                decoration: const InputDecoration(
+                  suffixText: '%',
+                  isDense: true,
+                ),
+                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                inputFormatters: [
+                  FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
+                ],
+                onChanged: (value) {
+                  final percent = double.tryParse(value) ?? 0;
+                  setState(() {
+                    _participants[user.id] = percent;
+                    _calculateShares();
+                  });
+                },
+              )
+            : Text(
+                '${currencyProvider.selectedCurrency.symbol}${(_participants[user.id] ?? 0).toStringAsFixed(2)}',
+                style: const TextStyle(color: AppTheme.textSecondary),
+              )
+    : null,
       secondary: CircleAvatar(
         backgroundColor: isCurrentUser ? AppTheme.accentColor : AppTheme.primaryColor,
         child: Text(

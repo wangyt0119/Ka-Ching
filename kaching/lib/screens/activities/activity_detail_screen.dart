@@ -399,14 +399,17 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                                 ),
                               )
                             : ListView.builder(
-                                shrinkWrap: true,
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: _transactions.length,
-                                itemBuilder: (context, index) {
-                                  final transaction = _transactions[index];
-                                  return _buildTransactionItem(transaction);
-                                },
-                              ),
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: _transactions.length,
+                            itemBuilder: (context, index) {
+                              final transaction = _transactions.reversed.toList()[index];  // Reversing the list here
+                              return _buildTransactionItem(transaction);
+                            },
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(bottom: 70.0), // Add some space at the bottom
+                          ),
                       ],
                     ),
                   ),

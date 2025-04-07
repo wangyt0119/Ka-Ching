@@ -67,21 +67,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildHomeContent() {
-    final authProvider = Provider.of<AuthProvider>(context);
-    final activityProvider = Provider.of<ActivityProvider>(context);
-    final currencyProvider = Provider.of<CurrencyProvider>(context);
-    
-    if (authProvider.currentUser == null) {
-      return const Center(
-        child: Text('Please login to continue'),
-      );
-    }
-    
-    return RefreshIndicator(
-      onRefresh: _loadData,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16.0),
+  final authProvider = Provider.of<AuthProvider>(context);
+  final activityProvider = Provider.of<ActivityProvider>(context);
+  final currencyProvider = Provider.of<CurrencyProvider>(context);
+
+  if (authProvider.currentUser == null) {
+    return const Center(
+      child: Text('Please login to continue'),
+    );
+  }
+
+  return RefreshIndicator(
+    onRefresh: _loadData,
+    child: SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(16.0),
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 56.0),  // Add padding at the bottom
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -177,33 +179,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   
                   if (authProvider.currentUser != null && 
                       activityBalances.containsKey(authProvider.currentUser!.id)) {
-                    userBalance = activityBalances[authProvider.currentUser!.id]!;
+                    userBalance = activityBalances[authProvider.currentUser!.id]!; 
                   }
                   
                   return _buildActivityCard(activity, userBalance);
                 },
               ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => const AddExpenseScreen(),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.add),
-              label: const Text('Add an Expense'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.accentColor,
-                minimumSize: const Size(double.infinity, 50),
-              ),
-            ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
+}
+
 
   Widget _buildActivityCard(activity, double userBalance) {
     final currencyProvider = Provider.of<CurrencyProvider>(context);
@@ -386,11 +374,15 @@ class _HomeScreenState extends State<HomeScreen> {
               onPressed: () {
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => const AddActivityScreen(),
+                    builder: (_) => const AddExpenseScreen(),
                   ),
                 );
               },
-              child: const Icon(Icons.add),
+              child: const Icon(
+                Icons.add,
+                color: AppTheme.textPrimary,  // Use your custom color here
+              ),
+              backgroundColor: AppTheme.accentColor,
             )
           : null,
       bottomNavigationBar: BottomNavigationBar(
