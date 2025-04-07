@@ -1,11 +1,14 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 import '../models/currency.dart';
 
 class CurrencyService {
   static const String _selectedCurrencyKey = 'selected_currency';
+  static const String _exchangeRatesKey = 'exchange_rates';
+  static const String _lastUpdatedKey = 'exchange_rates_updated_at';
   
-  // Common currencies with their exchange rates
+  // Common currencies with their initial rates
   static final List<Currency> _currencies = [
     Currency(code: 'USD', name: 'US Dollar', symbol: '\$', exchangeRate: 1.0),
     Currency(code: 'EUR', name: 'Euro', symbol: '€', exchangeRate: 0.85),
@@ -18,7 +21,84 @@ class CurrencyService {
     Currency(code: 'IDR', name: 'Indonesian Rupiah', symbol: 'Rp', exchangeRate: 14200),
   ];
 
-  // Get all available currencies
+  // Map to store live exchange rates
+  Map<String, double> _exchangeRates = {};
+  
+  // Initialize the service with latest rates
+  Future<void> initialize() async {
+    await _loadExchangeRates();
+    await _updateExchangeRatesIfNeeded();
+  }
+  
+  // Load saved exchange rates from local storage
+  Future<void> _loadExchangeRates() async {
+    final prefs = await SharedPreferences.getInstance();
+    final ratesJson = prefs.getString(_exchangeRatesKey);
+    
+    if (ratesJson != null) {
+      final Map<String, dynamic> rates = jsonDecode(ratesJson);
+      _exchangeRates = rates.map((key, value) => MapEntry(key, value.toDouble()));
+      
+      // Update currencies with saved rates
+      for (var currency in _currencies) {
+        if (_exchangeRates.containsKey(currency.code)) {
+          currency.exchangeRate = _exchangeRates[currency.code]!;
+        }
+      }
+    }
+  }
+  
+  // Check if rates need updating (more than 12 hours old)
+  Future<bool> _needsUpdate() async {
+    final prefs = await SharedPreferences.getInstance();
+    final lastUpdated = prefs.getString(_lastUpdatedKey);
+    
+    if (lastUpdated == null) return true;
+    
+    final lastUpdateTime = DateTime.parse(lastUpdated);
+    final now = DateTime.now();
+    
+    return now.difference(lastUpdateTime).inHours > 12;
+  }
+  
+  // Update exchange rates from external API
+  Future<void> _updateExchangeRatesIfNeeded() async {
+    if (await _needsUpdate()) {
+      try {
+        // Free exchange rate API
+        // Note: In a production app, you would use a paid API with better reliability
+        final response = await http.get(
+          Uri.parse('https://open.er-api.com/v6/latest/USD')
+        );
+        
+        if (response.statusCode == 200) {
+          final data = jsonDecode(response.body);
+          
+          if (data['rates'] != null) {
+            final Map<String, dynamic> newRates = data['rates'];
+            _exchangeRates = newRates.map((key, value) => MapEntry(key, value.toDouble()));
+            
+            // Update currency exchange rates
+            for (var currency in _currencies) {
+              if (_exchangeRates.containsKey(currency.code)) {
+                currency.exchangeRate = _exchangeRates[currency.code]!;
+              }
+            }
+            
+            // Save to local storage
+            final prefs = await SharedPreferences.getInstance();
+            await prefs.setString(_exchangeRatesKey, jsonEncode(_exchangeRates));
+            await prefs.setString(_lastUpdatedKey, DateTime.now().toIso8601String());
+          }
+        }
+      } catch (e) {
+        // If update fails, continue with existing rates
+        print('Error updating exchange rates: $e');
+      }
+    }
+  }
+
+  // Get all available currencies with latest rates
   List<Currency> getAllCurrencies() {
     return _currencies;
   }
@@ -56,5 +136,41 @@ class CurrencyService {
     }
     
     return getDefaultCurrency();
+  }
+  
+  // Force update exchange rates (useful for refresh button)
+  Future<bool> forceUpdateRates() async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://open.er-api.com/v6/latest/USD')
+      );
+      
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        
+        if (data['rates'] != null) {
+          final Map<String, dynamic> newRates = data['rates'];
+          _exchangeRates = newRates.map((key, value) => MapEntry(key, value.toDouble()));
+          
+          // Update currency exchange rates
+          for (var currency in _currencies) {
+            if (_exchangeRates.containsKey(currency.code)) {
+              currency.exchangeRate = _exchangeRates[currency.code]!;
+            }
+          }
+          
+          // Save to local storage
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString(_exchangeRatesKey, jsonEncode(_exchangeRates));
+          await prefs.setString(_lastUpdatedKey, DateTime.now().toIso8601String());
+          
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      print('Error updating exchange rates: $e');
+      return false;
+    }
   }
 } 

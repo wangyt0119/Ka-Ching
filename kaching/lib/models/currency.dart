@@ -2,7 +2,7 @@ class Currency {
   final String code;
   final String name;
   final String symbol;
-  final double exchangeRate; // Rate relative to USD
+  double exchangeRate; // Made mutable to update with live rates
 
   Currency({
     required this.code,

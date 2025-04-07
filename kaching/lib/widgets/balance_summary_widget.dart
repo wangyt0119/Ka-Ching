@@ -119,7 +119,9 @@ class BalanceSummaryWidget extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  currencyProvider.formatAmount(totalOwed - totalOwe),
+                  currencyProvider.formatAmount(
+                    currencyProvider.convertAmount(totalOwed - totalOwe)
+                  ),
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -180,7 +182,9 @@ class _BalanceItem extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         Text(
-          currencyProvider.formatAmount(amount),
+          currencyProvider.formatAmount(
+            currencyProvider.convertAmount(amount)
+          ),
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,

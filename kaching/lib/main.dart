@@ -12,16 +12,21 @@ import 'screens/transactions/settle_up_screen.dart';
 import 'theme/app_theme.dart';
 import 'services/transaction_service.dart';
 import 'services/activity_service.dart';
+import 'services/currency_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Reset mock data to ensure it's fresh
+  // Initialize services with mock data
   final transactionService = TransactionService();
   await transactionService.resetMockData();
   
   final activityService = ActivityService();
   await activityService.resetMockData();
+  
+  // Initialize currency service with real-time rates
+  final currencyService = CurrencyService();
+  await currencyService.initialize();
   
   runApp(const MyApp());
 }
