@@ -11,7 +11,8 @@ class RegisterScreen extends StatefulWidget {
   _RegisterScreenState createState() => _RegisterScreenState();
 }
 
-class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProviderStateMixin {
+class _RegisterScreenState extends State<RegisterScreen>
+    with SingleTickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _emailController = TextEditingController();
@@ -30,10 +31,7 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       duration: const Duration(milliseconds: 1200),
     );
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _animationController,
-        curve: Curves.easeIn,
-      ),
+      CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
     _animationController.forward();
   }
@@ -98,11 +96,8 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Join KaChing to split expenses with friends',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: AppTheme.textSecondary,
-                  ),
+                  'Join Ka-Ching to split expenses with friends',
+                  style: TextStyle(fontSize: 16, color: AppTheme.textSecondary),
                 ),
                 const SizedBox(height: 32),
                 // Registration Form
@@ -117,7 +112,10 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                         decoration: InputDecoration(
                           labelText: 'Full Name',
                           hintText: 'Enter your full name',
-                          prefixIcon: const Icon(Icons.person_outline, color: AppTheme.primaryColor),
+                          prefixIcon: const Icon(
+                            Icons.person_outline,
+                            color: AppTheme.primaryColor,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -136,7 +134,10 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                         decoration: InputDecoration(
                           labelText: 'Email',
                           hintText: 'Enter your email',
-                          prefixIcon: const Icon(Icons.email_outlined, color: AppTheme.primaryColor),
+                          prefixIcon: const Icon(
+                            Icons.email_outlined,
+                            color: AppTheme.primaryColor,
+                          ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -159,10 +160,15 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                         decoration: InputDecoration(
                           labelText: 'Password',
                           hintText: 'Create a password',
-                          prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.primaryColor),
+                          prefixIcon: const Icon(
+                            Icons.lock_outline,
+                            color: AppTheme.primaryColor,
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscurePassword ? Icons.visibility_off : Icons.visibility,
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                               color: AppTheme.textSecondary,
                             ),
                             onPressed: () {
@@ -193,15 +199,21 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                         decoration: InputDecoration(
                           labelText: 'Confirm Password',
                           hintText: 'Confirm your password',
-                          prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.primaryColor),
+                          prefixIcon: const Icon(
+                            Icons.lock_outline,
+                            color: AppTheme.primaryColor,
+                          ),
                           suffixIcon: IconButton(
                             icon: Icon(
-                              _obscureConfirmPassword ? Icons.visibility_off : Icons.visibility,
+                              _obscureConfirmPassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
                               color: AppTheme.textSecondary,
                             ),
                             onPressed: () {
                               setState(() {
-                                _obscureConfirmPassword = !_obscureConfirmPassword;
+                                _obscureConfirmPassword =
+                                    !_obscureConfirmPassword;
                               });
                             },
                           ),
@@ -232,12 +244,17 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                           ),
                           child: Row(
                             children: [
-                              const Icon(Icons.error_outline, color: AppTheme.errorColor),
+                              const Icon(
+                                Icons.error_outline,
+                                color: AppTheme.errorColor,
+                              ),
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
                                   authProvider.error!,
-                                  style: const TextStyle(color: AppTheme.errorColor),
+                                  style: const TextStyle(
+                                    color: AppTheme.errorColor,
+                                  ),
                                 ),
                               ),
                             ],
@@ -254,22 +271,23 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
                           ),
                           elevation: 3,
                         ),
-                        child: authProvider.isLoading
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
+                        child:
+                            authProvider.isLoading
+                                ? const SizedBox(
+                                  height: 20,
+                                  width: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                                : const Text(
+                                  'CREATE ACCOUNT',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                              )
-                            : const Text(
-                                'CREATE ACCOUNT',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
                       ),
                       const SizedBox(height: 24),
                       // Login Link
@@ -304,4 +322,4 @@ class _RegisterScreenState extends State<RegisterScreen> with SingleTickerProvid
       ),
     );
   }
-} 
+}

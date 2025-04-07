@@ -355,7 +355,7 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: AppTheme.backgroundColor,
       appBar: isHome
           ? AppBar(
-              title: const Text('KaChing'),
+              title: const Text('Ka-Ching'),
               actions: [
                 IconButton(
                   icon: const Icon(Icons.notifications_outlined),

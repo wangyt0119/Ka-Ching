@@ -16,18 +16,18 @@ import 'services/currency_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize services with mock data
   final transactionService = TransactionService();
   await transactionService.resetMockData();
-  
+
   final activityService = ActivityService();
   await activityService.resetMockData();
-  
+
   // Initialize currency service with real-time rates
   final currencyService = CurrencyService();
   await currencyService.initialize();
-  
+
   runApp(const MyApp());
 }
 
@@ -47,17 +47,20 @@ class MyApp extends StatelessWidget {
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
           return MaterialApp(
-            title: 'KaChing',
+            title: 'Ka-Ching',
             theme: AppTheme.lightTheme,
             routes: {
               '/currency': (context) => const CurrencyScreen(),
-              '/settle-up': (context) => SettleUpScreen(
-                    activityId: ModalRoute.of(context)?.settings.arguments as String?,
+              '/settle-up':
+                  (context) => SettleUpScreen(
+                    activityId:
+                        ModalRoute.of(context)?.settings.arguments as String?,
                   ),
             },
-            home: authProvider.isLoading
-                ? const SplashScreen()
-                : authProvider.isAuthenticated
+            home:
+                authProvider.isLoading
+                    ? const SplashScreen()
+                    : authProvider.isAuthenticated
                     ? const HomeScreen()
                     : const LoginScreen(),
             debugShowCheckedModeBanner: false,
@@ -93,7 +96,7 @@ class SplashScreen extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             const Text(
-              'KaChing',
+              'Ka-Ching',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
@@ -103,10 +106,7 @@ class SplashScreen extends StatelessWidget {
             const SizedBox(height: 8),
             const Text(
               'Split expenses with friends easily',
-              style: TextStyle(
-                fontSize: 16,
-                color: AppTheme.textSecondary,
-              ),
+              style: TextStyle(fontSize: 16, color: AppTheme.textSecondary),
             ),
             const SizedBox(height: 32),
             const CircularProgressIndicator(
