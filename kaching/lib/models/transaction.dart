@@ -2,7 +2,7 @@ import 'package:uuid/uuid.dart';
 
 enum TransactionType {
   expense,
-  settlement,
+  payment,
 }
 
 class Transaction {
@@ -13,10 +13,9 @@ class Transaction {
   final DateTime date;
   final String payerId;
   final Map<String, double> participants;
-  final TransactionType type;
-  final String? notes;
   final String? receiptImagePath;
-  final String? groupId;
+  final TransactionType type;
+  final String? activityId;
 
   Transaction({
     String? id,
@@ -26,10 +25,9 @@ class Transaction {
     required this.date,
     required this.payerId,
     required this.participants,
-    this.notes,
     this.receiptImagePath,
-    this.groupId,
     required this.type,
+    this.activityId,
   }) : id = id ?? const Uuid().v4();
 
   Map<String, dynamic> toJson() {
@@ -41,10 +39,9 @@ class Transaction {
       'date': date.toIso8601String(),
       'payerId': payerId,
       'participants': participants,
-      'type': type.toString(),
-      'notes': notes,
       'receiptImagePath': receiptImagePath,
-      'groupId': groupId,
+      'type': type.index,
+      'activityId': activityId,
     };
   }
 
@@ -56,13 +53,12 @@ class Transaction {
       description: json['description'],
       date: DateTime.parse(json['date']),
       payerId: json['payerId'],
-      participants: Map<String, double>.from(json['participants']),
-      type: json['type'] == 'TransactionType.expense'
-          ? TransactionType.expense
-          : TransactionType.settlement,
-      notes: json['notes'],
+      participants: Map<String, double>.from(
+        json['participants'].map((key, value) => MapEntry(key, value.toDouble())),
+      ),
       receiptImagePath: json['receiptImagePath'],
-      groupId: json['groupId'],
+      type: TransactionType.values[json['type']],
+      activityId: json['activityId'],
     );
   }
 } 

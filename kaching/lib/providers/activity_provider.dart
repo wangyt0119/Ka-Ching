@@ -60,4 +60,12 @@ class ActivityProvider extends ChangeNotifier {
       return false;
     }
   }
+
+  Future<Activity?> getActivityById(String id) async {
+    try {
+      return _activities.firstWhere((activity) => activity.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
 } 

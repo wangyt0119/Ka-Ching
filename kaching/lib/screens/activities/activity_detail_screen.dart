@@ -6,8 +6,11 @@ import '../../models/transaction.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/user_provider.dart';
+import '../../providers/currency_provider.dart';
 import '../../services/activity_service.dart';
+import '../../services/transaction_service.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/balance_summary_widget.dart';
 import '../transactions/add_expense_screen.dart';
 import '../transactions/transaction_detail_screen.dart';
 
@@ -25,10 +28,10 @@ class ActivityDetailScreen extends StatefulWidget {
 
 class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   final ActivityService _activityService = ActivityService();
+  final TransactionService _transactionService = TransactionService();
   Activity? _activity;
   List<Transaction> _transactions = [];
   bool _isLoading = true;
-  Map<String, double> _memberBalances = {};
 
   @override
   void initState() {
@@ -51,29 +54,15 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         await transactionProvider.loadTransactions();
         
         // Filter transactions for this activity
-        final activityTransactions = transactionProvider.transactions
-            .where((t) => t.groupId == widget.activityId)
-            .toList();
-        
-        // Calculate balances for each member
-        final Map<String, double> balances = {};
-        
-        for (final transaction in activityTransactions) {
-          if (transaction.type == TransactionType.expense) {
-            // Add amount to payer's balance
-            balances[transaction.payerId] = (balances[transaction.payerId] ?? 0) + transaction.amount;
-            
-            // Subtract each participant's share
-            for (final entry in transaction.participants.entries) {
-              balances[entry.key] = (balances[entry.key] ?? 0) - entry.value;
-            }
-          }
-        }
+        final activityTransactions = await _transactionService.getGroupTransactions(widget.activityId);
         
         setState(() {
           _activity = activity;
           _transactions = activityTransactions;
-          _memberBalances = balances;
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
           _isLoading = false;
         });
       }
@@ -90,6 +79,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   Widget _buildTransactionItem(Transaction transaction) {
     final authProvider = Provider.of<AuthProvider>(context);
     final userProvider = Provider.of<UserProvider>(context);
+    final currencyProvider = Provider.of<CurrencyProvider>(context);
     final currentUserId = authProvider.currentUser?.id;
     
     return FutureBuilder<dynamic>(
@@ -100,10 +90,10 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         
         // Calculate what the current user owes or is owed
         double userAmount = 0;
-        if (isCurrentUserPayer) {
+        if (isCurrentUserPayer && currentUserId != null) {
           // Current user paid, so they are owed money from others
           userAmount = transaction.amount - (transaction.participants[currentUserId] ?? 0);
-        } else if (transaction.participants.containsKey(currentUserId)) {
+        } else if (currentUserId != null && transaction.participants.containsKey(currentUserId)) {
           // Current user is a participant, so they owe money
           userAmount = -(transaction.participants[currentUserId] ?? 0);
         }
@@ -111,7 +101,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
         return Card(
           margin: const EdgeInsets.only(bottom: 12),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
           child: InkWell(
             onTap: () {
@@ -121,7 +111,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                 ),
               );
             },
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -133,12 +123,18 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                         width: 40,
                         height: 40,
                         decoration: BoxDecoration(
-                          color: AppTheme.primaryColor.withOpacity(0.2),
+                          color: transaction.type == TransactionType.expense
+                              ? AppTheme.primaryColor.withOpacity(0.2)
+                              : AppTheme.secondaryColor.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Icon(
-                          Icons.receipt,
-                          color: AppTheme.primaryColor,
+                        child: Icon(
+                          transaction.type == TransactionType.expense
+                              ? Icons.receipt
+                              : Icons.swap_horiz,
+                          color: transaction.type == TransactionType.expense
+                              ? AppTheme.primaryColor
+                              : AppTheme.secondaryColor,
                           size: 20,
                         ),
                       ),
@@ -168,7 +164,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
                           Text(
-                            '\$${transaction.amount.toStringAsFixed(2)}',
+                            currencyProvider.formatAmount(transaction.amount),
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
@@ -203,7 +199,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          '\$${userAmount.abs().toStringAsFixed(2)}',
+                          currencyProvider.formatAmount(userAmount.abs()),
                           style: TextStyle(
                             fontWeight: FontWeight.bold,
                             color: userAmount > 0 
@@ -226,8 +222,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-    final userProvider = Provider.of<UserProvider>(context);
-    final currentUserId = authProvider.currentUser?.id;
+    final currencyProvider = Provider.of<CurrencyProvider>(context);
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -237,7 +232,6 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
           IconButton(
             icon: const Icon(Icons.edit),
             onPressed: () {
-              // Edit activity functionality would be implemented here
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Edit activity would be implemented here')),
               );
@@ -260,7 +254,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                         // Activity Header
                         Card(
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(16),
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(16),
@@ -328,7 +322,7 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                                       ),
                                     ),
                                     Text(
-                                      '\$${_activity!.totalAmount.toStringAsFixed(2)}',
+                                      currencyProvider.formatAmount(_activity!.totalAmount),
                                       style: const TextStyle(
                                         fontWeight: FontWeight.bold,
                                         fontSize: 18,
@@ -343,82 +337,12 @@ class _ActivityDetailScreenState extends State<ActivityDetailScreen> {
                         ),
                         const SizedBox(height: 24),
                         
-                        // Member Balances
-                        const Text(
-                          'Member Balances',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppTheme.textPrimary,
-                          ),
+                        // Balance Summary with Currency Button
+                        BalanceSummaryWidget(
+                          activityId: widget.activityId,
+                          showSettleUp: true,
                         ),
-                        const SizedBox(height: 16),
-                        Card(
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: ListView.separated(
-                            shrinkWrap: true,
-                            physics: const NeverScrollableScrollPhysics(),
-                            itemCount: _memberBalances.length,
-                            separatorBuilder: (context, index) => const Divider(),
-                            itemBuilder: (context, index) {
-                              final entry = _memberBalances.entries.elementAt(index);
-                              final memberId = entry.key;
-                              final balance = entry.value;
-                              final isCurrentUser = memberId == currentUserId;
-                              
-                              return FutureBuilder<dynamic>(
-                                future: userProvider.getUserById(memberId),
-                                builder: (context, snapshot) {
-                                  final user = snapshot.data;
-                                  final name = isCurrentUser ? 'You' : (user?.name ?? 'Unknown');
-                                  
-                                  return ListTile(
-                                    leading: CircleAvatar(
-                                      backgroundColor: isCurrentUser 
-                                          ? AppTheme.accentColor 
-                                          : AppTheme.primaryColor,
-                                      child: Text(
-                                        (user?.name ?? 'U').substring(0, 1).toUpperCase(),
-                                        style: const TextStyle(color: Colors.white),
-                                      ),
-                                    ),
-                                    title: Text(name),
-                                    trailing: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      crossAxisAlignment: CrossAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          '\$${balance.abs().toStringAsFixed(2)}',
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: balance > 0 
-                                                ? AppTheme.positiveAmount 
-                                                : balance < 0 
-                                                    ? AppTheme.negativeAmount 
-                                                    : AppTheme.settledColor,
-                                          ),
-                                        ),
-                                        Text(
-                                          balance > 0 
-                                              ? 'gets back' 
-                                              : balance < 0 
-                                                  ? 'owes' 
-                                                  : 'settled up',
-                                          style: const TextStyle(
-                                            fontSize: 12,
-                                            color: AppTheme.textSecondary,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          ),
-                        ),
+                        
                         const SizedBox(height: 24),
                         
                         // Transactions

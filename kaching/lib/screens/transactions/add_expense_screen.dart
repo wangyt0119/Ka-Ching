@@ -9,6 +9,7 @@ import '../../providers/auth_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../providers/currency_provider.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   final String? activityId;
@@ -133,7 +134,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
         participants: Map.from(_participants),
         receiptImagePath: _receiptImage?.path,
         type: TransactionType.expense,
-        groupId: widget.activityId,
+        activityId: widget.activityId,
       );
       
       final success = await transactionProvider.addTransaction(transaction);
@@ -149,6 +150,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     final authProvider = Provider.of<AuthProvider>(context);
     final userProvider = Provider.of<UserProvider>(context);
     final transactionProvider = Provider.of<TransactionProvider>(context);
+    final currencyProvider = Provider.of<CurrencyProvider>(context);
     
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -356,7 +358,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                     
                     final isParticipant = _participants.containsKey(user.id);
                     
-                    return _buildParticipantTile(user, isCurrentUser, isParticipant);
+                    return _buildParticipantTile(user, isCurrentUser, isParticipant, currencyProvider);
                   },
                 ),
               const SizedBox(height: 32),
@@ -386,7 +388,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     );
   }
   
-  Widget _buildParticipantTile(User user, bool isCurrentUser, bool isSelected) {
+  Widget _buildParticipantTile(User user, bool isCurrentUser, bool isSelected, CurrencyProvider currencyProvider) {
     return CheckboxListTile(
       value: isSelected,
       onChanged: (value) {
@@ -404,11 +406,11 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       subtitle: isSelected && !_splitEqually
           ? TextFormField(
               initialValue: (_participants[user.id] ?? 0).toString(),
-              decoration: const InputDecoration(
-                prefixText: '\$',
+              decoration: InputDecoration(
+                prefixText: currencyProvider.selectedCurrency.symbol,
                 isDense: true,
               ),
-              keyboardType: TextInputType.numberWithOptions(decimal: true),
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
               inputFormatters: [
                 FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}')),
               ],
@@ -418,7 +420,12 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 });
               },
             )
-          : null,
+          : isSelected && _splitEqually
+              ? Text(
+                  '${currencyProvider.selectedCurrency.symbol}${(_participants[user.id] ?? 0).toStringAsFixed(2)}',
+                  style: const TextStyle(color: AppTheme.textSecondary),
+                )
+              : null,
       secondary: CircleAvatar(
         backgroundColor: isCurrentUser ? AppTheme.accentColor : AppTheme.primaryColor,
         child: Text(

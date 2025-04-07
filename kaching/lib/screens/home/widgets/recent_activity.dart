@@ -45,7 +45,7 @@ class TransactionListItem extends StatelessWidget {
     final currentUserId = authProvider.currentUser?.id;
     
     final isExpense = transaction.type == TransactionType.expense;
-    final isSettlement = transaction.type == TransactionType.settlement;
+    final isSettlement = transaction.type == TransactionType.payment;
     
     final isPayer = transaction.payerId == currentUserId;
     final isParticipant = transaction.participants.containsKey(currentUserId);

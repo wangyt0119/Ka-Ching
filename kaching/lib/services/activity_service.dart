@@ -1,35 +1,38 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/activity.dart';
+import '../services/transaction_service.dart';
+import '../models/transaction.dart';
 
 class ActivityService {
   static const String _activitiesKey = 'activities';
+  final TransactionService _transactionService = TransactionService();
   
-  // Mock activities
+  // Mock activities with string IDs
   static final List<Activity> _mockActivities = [
     Activity(
-      id: '1',
+      id: "1", // Use string ID
       name: 'Batam Trip',
       description: 'Weekend getaway to Batam',
       memberIds: ['1', '2', '3'],
       createdAt: DateTime.now().subtract(const Duration(days: 15)),
-      totalAmount: 450.0,
+      totalAmount: 525.0,
     ),
     Activity(
-      id: '2',
+      id: "2", // Use string ID
       name: 'Johor Trip',
       description: 'Day trip to Johor Bahru',
       memberIds: ['1', '2', '4'],
       createdAt: DateTime.now().subtract(const Duration(days: 5)),
-      totalAmount: 320.0,
+      totalAmount: 375.0,
     ),
     Activity(
-      id: '3',
+      id: "3", // Use string ID
       name: 'Dinner at Marina Bay',
       description: 'Dinner with friends',
       memberIds: ['1', '3', '4'],
       createdAt: DateTime.now().subtract(const Duration(days: 2)),
-      totalAmount: 180.0,
+      totalAmount: 225.0,
     ),
   ];
 
@@ -47,6 +50,22 @@ class ActivityService {
     return activitiesJson
         .map((json) => Activity.fromJson(jsonDecode(json)))
         .toList();
+  }
+
+  // Update activity total amounts from transactions
+  Future<void> _updateActivityTotals(List<Activity> activities) async {
+    final transactions = await _transactionService.getAllTransactions();
+    
+    for (final activity in activities) {
+      double total = 0;
+      for (final transaction in transactions) {
+        if (transaction.activityId == activity.id && 
+            transaction.type == TransactionType.expense) {
+          total += transaction.amount;
+        }
+      }
+      activity.totalAmount = total;
+    }
   }
 
   // Save mock activities
@@ -91,5 +110,9 @@ class ActivityService {
     } catch (e) {
       return null;
     }
+  }
+
+  Future<void> resetMockData() async {
+    await _saveMockActivities();
   }
 } 

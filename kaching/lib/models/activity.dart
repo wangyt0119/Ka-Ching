@@ -35,7 +35,7 @@ class Activity {
 
   factory Activity.fromJson(Map<String, dynamic> json) {
     return Activity(
-      id: json['id'],
+      id: json['id'].toString(),
       name: json['name'],
       description: json['description'],
       memberIds: List<String>.from(json['memberIds']),

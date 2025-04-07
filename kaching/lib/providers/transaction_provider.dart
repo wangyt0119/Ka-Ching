@@ -49,6 +49,37 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
+  // Get transactions for a specific activity
+  List<Transaction> getActivityTransactions(String activityId) {
+    return _transactions.where((t) => t.activityId == activityId).toList();
+  }
+
+  // Calculate balances for a specific activity
+  Map<String, double> getActivityBalances(String activityId) {
+    final activityTransactions = getActivityTransactions(activityId);
+    Map<String, double> activityBalances = {};
+    
+    for (final transaction in activityTransactions) {
+      if (transaction.type == TransactionType.expense) {
+        // Add amount to payer's balance
+        activityBalances[transaction.payerId] = (activityBalances[transaction.payerId] ?? 0) + transaction.amount;
+        
+        // Subtract each participant's share
+        for (final entry in transaction.participants.entries) {
+          activityBalances[entry.key] = (activityBalances[entry.key] ?? 0) - entry.value;
+        }
+      } else if (transaction.type == TransactionType.payment) {
+        // Add payment to receiver's balance
+        for (final entry in transaction.participants.entries) {
+          activityBalances[entry.key] = (activityBalances[entry.key] ?? 0) + entry.value;
+          activityBalances[transaction.payerId] = (activityBalances[transaction.payerId] ?? 0) - entry.value;
+        }
+      }
+    }
+    
+    return activityBalances;
+  }
+
   Future<bool> addTransaction(Transaction transaction) async {
     _isLoading = true;
     _error = null;
@@ -66,7 +97,7 @@ class TransactionProvider extends ChangeNotifier {
     }
   }
 
-  Future<bool> settleUp(String payerId, String receiverId, double amount) async {
+  Future<bool> settleUp(String payerId, String receiverId, double amount, {String? activityId}) async {
     _isLoading = true;
     _error = null;
     notifyListeners();
@@ -78,7 +109,8 @@ class TransactionProvider extends ChangeNotifier {
         date: DateTime.now(),
         payerId: payerId,
         participants: {receiverId: amount},
-        type: TransactionType.settlement,
+        type: TransactionType.payment,
+        activityId: activityId,
       );
       
       await _transactionService.addTransaction(settlement);

@@ -4,11 +4,25 @@ import 'providers/auth_provider.dart';
 import 'providers/transaction_provider.dart';
 import 'providers/user_provider.dart';
 import 'providers/activity_provider.dart';
+import 'providers/currency_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home/home_screen.dart';
+import 'screens/settings/currency_screen.dart';
+import 'screens/transactions/settle_up_screen.dart';
 import 'theme/app_theme.dart';
+import 'services/transaction_service.dart';
+import 'services/activity_service.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Reset mock data to ensure it's fresh
+  final transactionService = TransactionService();
+  await transactionService.resetMockData();
+  
+  final activityService = ActivityService();
+  await activityService.resetMockData();
+  
   runApp(const MyApp());
 }
 
@@ -23,12 +37,19 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => TransactionProvider()),
         ChangeNotifierProvider(create: (_) => UserProvider()),
         ChangeNotifierProvider(create: (_) => ActivityProvider()),
+        ChangeNotifierProvider(create: (_) => CurrencyProvider()),
       ],
       child: Consumer<AuthProvider>(
         builder: (context, authProvider, _) {
           return MaterialApp(
             title: 'KaChing',
             theme: AppTheme.lightTheme,
+            routes: {
+              '/currency': (context) => const CurrencyScreen(),
+              '/settle-up': (context) => SettleUpScreen(
+                    activityId: ModalRoute.of(context)?.settings.arguments as String?,
+                  ),
+            },
             home: authProvider.isLoading
                 ? const SplashScreen()
                 : authProvider.isAuthenticated

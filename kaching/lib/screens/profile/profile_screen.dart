@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'dart:io';
 import '../../providers/auth_provider.dart';
+import '../../providers/currency_provider.dart';
 import '../../theme/app_theme.dart';
 import '../auth/login_screen.dart';
 import 'edit_profile_screen.dart';
+import '../settings/currency_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({Key? key}) : super(key: key);
@@ -112,6 +114,18 @@ class ProfileScreen extends StatelessWidget {
                 // Navigate to help screen
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('Help & Support would be implemented here')),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.currency_exchange),
+              title: const Text('Change Currency'),
+              subtitle: Text('Currently: ${Provider.of<CurrencyProvider>(context).selectedCurrency.code}'),
+              onTap: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => const CurrencyScreen(),
+                  ),
                 );
               },
             ),

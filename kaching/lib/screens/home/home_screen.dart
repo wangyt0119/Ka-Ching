@@ -5,7 +5,9 @@ import '../../providers/auth_provider.dart';
 import '../../providers/transaction_provider.dart';
 import '../../providers/user_provider.dart';
 import '../../providers/activity_provider.dart';
+import '../../providers/currency_provider.dart';
 import '../../theme/app_theme.dart';
+import '../../widgets/balance_summary_widget.dart';
 import '../auth/login_screen.dart';
 import '../transactions/add_expense_screen.dart';
 import '../transactions/transaction_list_screen.dart';
@@ -13,7 +15,6 @@ import '../friends/friend_list_screen.dart';
 import '../profile/profile_screen.dart';
 import '../activities/activity_detail_screen.dart';
 import '../activities/add_activity_screen.dart';
-import 'widgets/balance_summary.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -68,6 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHomeContent() {
     final authProvider = Provider.of<AuthProvider>(context);
     final activityProvider = Provider.of<ActivityProvider>(context);
+    final currencyProvider = Provider.of<CurrencyProvider>(context);
     
     if (authProvider.currentUser == null) {
       return const Center(
@@ -92,7 +94,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
             const SizedBox(height: 24),
-            const BalanceSummary(),
+            const BalanceSummaryWidget(),
             const SizedBox(height: 24),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -168,7 +170,17 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemCount: activityProvider.activities.length,
                 itemBuilder: (context, index) {
                   final activity = activityProvider.activities[index];
-                  return _buildActivityCard(activity);
+                  final transactionProvider = Provider.of<TransactionProvider>(context);
+                  
+                  Map<String, double> activityBalances = transactionProvider.getActivityBalances(activity.id);
+                  double userBalance = 0;
+                  
+                  if (authProvider.currentUser != null && 
+                      activityBalances.containsKey(authProvider.currentUser!.id)) {
+                    userBalance = activityBalances[authProvider.currentUser!.id]!;
+                  }
+                  
+                  return _buildActivityCard(activity, userBalance);
                 },
               ),
             const SizedBox(height: 24),
@@ -193,13 +205,13 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Widget _buildActivityCard(activity) {
-    final userProvider = Provider.of<UserProvider>(context);
+  Widget _buildActivityCard(activity, double userBalance) {
+    final currencyProvider = Provider.of<CurrencyProvider>(context);
     
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
       elevation: 2,
       child: InkWell(
@@ -210,7 +222,7 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           );
         },
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Column(
@@ -258,11 +270,11 @@ class _HomeScreenState extends State<HomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Text(
-                        '\$${activity.totalAmount.toStringAsFixed(2)}',
+                        currencyProvider.formatAmount(activity.totalAmount),
                         style: const TextStyle(
-                          fontSize: 18,
+                          fontSize: 16,
                           fontWeight: FontWeight.bold,
-                          color: AppTheme.primaryColor,
+                          color: AppTheme.textPrimary,
                         ),
                       ),
                       const Text(
@@ -294,19 +306,36 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                   const Spacer(),
-                  const Text(
-                    'View details',
-                    style: TextStyle(
-                      color: AppTheme.primaryColor,
-                      fontWeight: FontWeight.bold,
+                  if (userBalance != 0)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: userBalance > 0 
+                            ? AppTheme.positiveAmount.withOpacity(0.2) 
+                            : AppTheme.negativeAmount.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Text(
+                        userBalance > 0 
+                            ? 'You get back ${currencyProvider.formatAmount(userBalance)}'
+                            : 'You owe ${currencyProvider.formatAmount(userBalance.abs())}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: userBalance > 0 
+                              ? AppTheme.positiveAmount 
+                              : AppTheme.negativeAmount,
+                        ),
+                      ),
+                    )
+                  else
+                    const Text(
+                      'Settled up',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppTheme.settledColor,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    size: 14,
-                    color: AppTheme.primaryColor,
-                  ),
                 ],
               ),
             ],

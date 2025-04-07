@@ -85,7 +85,7 @@ class TransactionDetailScreen extends StatelessWidget {
                         ),
                       ],
                     ),
-                    if (transaction.notes != null && transaction.notes!.isNotEmpty) ...[
+                    if (transaction.description != null && transaction.description!.isNotEmpty) ...[
                       const SizedBox(height: 16),
                       const Divider(),
                       const SizedBox(height: 8),
@@ -98,7 +98,7 @@ class TransactionDetailScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        transaction.notes!,
+                        transaction.description!,
                         style: const TextStyle(color: AppTheme.textSecondary),
                       ),
                     ],
