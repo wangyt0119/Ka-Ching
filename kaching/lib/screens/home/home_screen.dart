@@ -361,23 +361,27 @@ class _HomeScreenState extends State<HomeScreen> {
       return const LoginScreen();
     }
 
+    final bool isHome = _selectedIndex == 0;
+
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
-      appBar: AppBar(
-        title: const Text('KaChing'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Notifications would be implemented here')),
-              );
-            },
-          ),
-        ],
-      ),
+      appBar: isHome
+          ? AppBar(
+              title: const Text('KaChing'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.notifications_outlined),
+                  onPressed: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Notifications would be implemented here')),
+                    );
+                  },
+                ),
+              ],
+            )
+          : null,
       body: _getScreen(),
-      floatingActionButton: _selectedIndex == 0
+      floatingActionButton: isHome
           ? FloatingActionButton(
               onPressed: () {
                 Navigator.of(context).push(
@@ -413,4 +417,5 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+
 } 
