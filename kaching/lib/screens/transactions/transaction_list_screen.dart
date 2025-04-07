@@ -14,6 +14,9 @@ class TransactionListScreen extends StatefulWidget {
 }
 
 class _TransactionListScreenState extends State<TransactionListScreen> {
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -29,8 +32,23 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
   }
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final transactionProvider = Provider.of<TransactionProvider>(context);
+
+    // Filter transactions by title or description (case-insensitive)
+    final filteredTransactions = transactionProvider.transactions.where((transaction) {
+  final query = _searchQuery.toLowerCase();
+  final title = transaction.title?.toLowerCase() ?? '';
+  final description = transaction.description?.toLowerCase() ?? '';
+  return title.contains(query) || description.contains(query);
+}).toList();
+
 
     return Scaffold(
       backgroundColor: AppTheme.backgroundColor,
@@ -51,24 +69,46 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: _loadTransactions,
-        child: transactionProvider.isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : transactionProvider.transactions.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No transactions yet',
-                      style: TextStyle(color: AppTheme.textSecondary),
-                    ),
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: transactionProvider.transactions.length,
-                    separatorBuilder: (context, index) => const Divider(),
-                    itemBuilder: (context, index) {
-                      final transaction = transactionProvider.transactions[index];
-                      return TransactionListItem(transaction: transaction);
-                    },
-                  ),
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                controller: _searchController,
+                decoration: const InputDecoration(
+                  labelText: 'Search by title or description',
+                  prefixIcon: Icon(Icons.search),
+                  border: OutlineInputBorder(),
+                ),
+                onChanged: (value) {
+                  setState(() {
+                    _searchQuery = value;
+                  });
+                },
+              ),
+            ),
+            Expanded(
+              child: transactionProvider.isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : filteredTransactions.isEmpty
+                      ? const Center(
+                          child: Text(
+                            'No transactions found',
+                            style: TextStyle(color: AppTheme.textSecondary),
+                          ),
+                        )
+                      : ListView.separated(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: filteredTransactions.length,
+                          separatorBuilder: (context, index) => const Divider(),
+                          itemBuilder: (context, index) {
+                            final transaction = filteredTransactions[index];
+                            return TransactionListItem(transaction: transaction);
+                          },
+                        ),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
@@ -83,4 +123,4 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       ),
     );
   }
-} 
+}
