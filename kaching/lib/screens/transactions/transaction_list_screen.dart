@@ -13,6 +13,8 @@ class TransactionListScreen extends StatefulWidget {
   _TransactionListScreenState createState() => _TransactionListScreenState();
 }
 
+DateTimeRange? _selectedDateRange;
+
 class _TransactionListScreenState extends State<TransactionListScreen> {
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
@@ -43,11 +45,18 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
 
     // Filter transactions by title or description (case-insensitive)
     final filteredTransactions = transactionProvider.transactions.where((transaction) {
-  final query = _searchQuery.toLowerCase();
-  final title = transaction.title?.toLowerCase() ?? '';
-  final description = transaction.description?.toLowerCase() ?? '';
-  return title.contains(query) || description.contains(query);
-}).toList();
+    final query = _searchQuery.toLowerCase();
+    final title = transaction.title?.toLowerCase() ?? '';
+    final description = transaction.description?.toLowerCase() ?? '';
+    final matchesText = title.contains(query) || description.contains(query);
+
+    final matchesDate = _selectedDateRange == null ||
+        (transaction.date.isAfter(_selectedDateRange!.start.subtract(const Duration(days: 1))) &&
+        transaction.date.isBefore(_selectedDateRange!.end.add(const Duration(days: 1))));
+
+    return matchesText && matchesDate;
+  }).toList();
+
 
 
     return Scaffold(
@@ -55,39 +64,78 @@ class _TransactionListScreenState extends State<TransactionListScreen> {
       appBar: AppBar(
         title: const Text('Transactions'),
         actions: [
+        if (_selectedDateRange != null)
           IconButton(
-            icon: const Icon(Icons.file_download),
+            icon: const Icon(Icons.clear),
+            tooltip: 'Clear Date Filter',
             onPressed: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Export functionality would be implemented here'),
-                ),
-              );
+              setState(() {
+                _selectedDateRange = null;
+              });
             },
           ),
-        ],
+        IconButton(
+          icon: const Icon(Icons.calendar_today),
+          onPressed: () async {
+            final DateTime now = DateTime.now();
+            final DateTimeRange? picked = await showDateRangePicker(
+              context: context,
+              firstDate: DateTime(now.year - 5),
+              lastDate: DateTime(now.year + 5),
+              initialDateRange: _selectedDateRange,
+            );
+            if (picked != null) {
+              setState(() {
+                _selectedDateRange = picked;
+              });
+            }
+          },
+        ),
+        IconButton(
+          icon: const Icon(Icons.file_download),
+          onPressed: () {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Export functionality would be implemented here'),
+              ),
+            );
+          },
+        ),
+      ],
+
+
       ),
       body: RefreshIndicator(
         onRefresh: _loadTransactions,
         child: Column(
-          children: [
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              controller: _searchController,
+              decoration: const InputDecoration(
+                labelText: 'Search by title or description',
+                prefixIcon: Icon(Icons.search),
+                border: OutlineInputBorder(),
+              ),
+              onChanged: (value) {
+                setState(() {
+                  _searchQuery = value;
+                });
+              },
+            ),
+          ),
+          if (_selectedDateRange != null)
             Padding(
-              padding: const EdgeInsets.all(16),
-              child: TextField(
-                controller: _searchController,
-                decoration: const InputDecoration(
-                  labelText: 'Search by title or description',
-                  prefixIcon: Icon(Icons.search),
-                  border: OutlineInputBorder(),
-                ),
-                onChanged: (value) {
-                  setState(() {
-                    _searchQuery = value;
-                  });
-                },
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Text(
+                'Showing from ${_selectedDateRange!.start.toLocal().toString().split(' ')[0]} '
+                'to ${_selectedDateRange!.end.toLocal().toString().split(' ')[0]}',
+                style: const TextStyle(color: AppTheme.textSecondary),
               ),
             ),
-            Expanded(
+          Expanded(
+
               child: transactionProvider.isLoading
                   ? const Center(child: CircularProgressIndicator())
                   : filteredTransactions.isEmpty
