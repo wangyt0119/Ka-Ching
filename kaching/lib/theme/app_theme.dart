@@ -1,34 +1,39 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Updated soft color scheme with varied darkness levels
-  static const Color primaryColor = Color(0xFF4CAF50);      // Soft green
-  static const Color primaryLightColor = Color(0xFF81C784); // Light green
-  static const Color primaryDarkColor = Color(0xFF388E3C);  // Dark green
-  
-  static const Color secondaryColor = Color(0xFF42A5F5);      // Soft blue
-  static const Color secondaryLightColor = Color(0xFF90CAF9); // Light blue
-  static const Color secondaryDarkColor = Color(0xFF1976D2);  // Dark blue
-  
-  static const Color accentColor = Color(0xFFFFA726);      // Soft orange
-  static const Color accentLightColor = Color(0xFFFFCC80); // Light orange
-  static const Color accentDarkColor = Color(0xFFE65100);  // Dark orange
-  
-  static const Color backgroundColor = Color(0xFFF5F5F6); // Soft gray background
-  static const Color surfaceColor = Color(0xFFFFFFFF);    // White surface
-  
-  // Text colors
-  static const Color textPrimary = Color(0xFF263238);     // Dark blue-gray
-  static const Color textSecondary = Color(0xFF607D8B);   // Medium blue-gray
-  static const Color textLight = Color(0xFF90A4AE);       // Light blue-gray
-  
-  // Additional colors
-  static const Color errorColor = Color(0xFFEF9A9A);        // Soft red
-  static const Color dividerColor = Color(0xFFEEEEEE);      // Light gray
+  // Updated color scheme with pink and purple palette
+  // Refined Primary Colors (Pink Theme)
+  static const Color primaryColor = Color(0xFFF3C4D6);       // Soft Pink
+  static const Color primaryLightColor = Color(0xFFFBE4EF);  // Very Light Pink
+  static const Color primaryDarkColor = Color(0xFFE295B5);   // Muted Rose
+
+  // Refined Secondary Colors (Purple Theme)
+  static const Color secondaryColor = Color(0xFFD1C4E9);       // Soft Lavender
+  static const Color secondaryLightColor = Color(0xFFEDE7F6);  // Pale Lavender
+  static const Color secondaryDarkColor = Color(0xFF9575CD);   // Medium Purple
+
+  // Accent Colors (Balanced, Not Overly Saturated)
+  static const Color accentColor = Color(0xFFF48FB1);       // Warm Pink
+  static const Color accentLightColor = Color(0xFFFCE4EC);  // Blush Pink
+  static const Color accentDarkColor = Color(0xFFC2185B);   // Deep Raspberry
+
+  // Backgrounds and Surfaces
+  static const Color backgroundColor = Color(0xFFFAF5FF); // Soft Lavender Background
+  static const Color surfaceColor = Color(0xFFFFFFFF);    // Clean White
+
+  // Text Colors (High Readability on Light Backgrounds)
+  static const Color textPrimary = Color(0xFF4A148C);     // Deep Purple
+  static const Color textSecondary = Color(0xFF7B1FA2);   // Muted Purple
+  static const Color textLight = Color(0xFFBA68C8);       // Soft Lilac
+
+  // Additional UI Colors
+  static const Color errorColor = Color(0xFFFFCDD2);        // Soft Blush Error
+  static const Color dividerColor = Color(0xFFE1BEE7);      // Pale Mauve Divider
   static const Color cardColor = Colors.white;
-  static const Color positiveAmount = Color(0xFF66BB6A);    // Soft green
-  static const Color negativeAmount = Color(0xFFEF5350);    // Soft red
-  static const Color settledColor = Color(0xFF9E9E9E);      // Medium gray
+  static const Color positiveAmount = Color(0xFF4CAF50);    // Pleasant Green
+  static const Color negativeAmount = Color(0xFFF44336);    // Calm Red
+  static const Color settledColor = Color(0xFFBDBDBD);       // Muted Grey
+   // Gray for settled
 
   static ThemeData get lightTheme {
     return ThemeData(
@@ -62,10 +67,10 @@ class AppTheme {
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: primaryColor,
+          backgroundColor: accentColor,
           foregroundColor: Colors.white,
           elevation: 1,
-          shadowColor: primaryColor.withOpacity(0.4),
+          shadowColor: accentColor.withOpacity(0.4),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -74,7 +79,7 @@ class AppTheme {
       ),
       textButtonTheme: TextButtonThemeData(
         style: TextButton.styleFrom(
-          foregroundColor: primaryColor,
+          foregroundColor: secondaryColor,
         ),
       ),
       floatingActionButtonTheme: FloatingActionButtonThemeData(
@@ -164,6 +169,9 @@ class AppTheme {
           borderRadius: BorderRadius.circular(16),
         ),
         elevation: 8,
+      ),
+      progressIndicatorTheme: ProgressIndicatorThemeData(
+        color: accentColor,
       ),
       textTheme: TextTheme(
         headlineLarge: TextStyle(
